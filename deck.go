@@ -11,11 +11,11 @@ import (
 
 type deck []string
 
+var cardSuites = []string{"Spades", "Diamonds", "Hearts", "clubs"}
+var cardValues = []string{"One", "Two", "Three"}
+
 func newDeck() deck {
 	cards := deck{}
-	cardSuites := []string{"Spades", "Diamonds", "Hearts", "clubs"}
-	cardValues := []string{"One", "Two", "Three"}
-
 	for _, suite := range cardSuites {
 		for _, value := range cardValues {
 			cards = append(cards, value+" of "+suite)
