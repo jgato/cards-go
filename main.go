@@ -5,6 +5,7 @@ import "fmt"
 func main() {
 
 	cards := newDeck()
+	cards.shuffle()
 	cards.Print()
 	fmt.Println("====")
 	hand, cards := deal(cards, 3)
