@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -24,6 +25,16 @@ func readLines(path string) ([]string, error) {
 		lines = append(lines, scanner.Text())
 	}
 	return lines, scanner.Err()
+}
+
+// return error when no more elements
+func popFirstLink(links []string) (string, error) {
+	if len(links) > 0 {
+		link := links[0]
+		links = links[1:]
+		return link, nil
+	}
+	return "", errors.New("no more elements")
 }
 
 func main() {
@@ -49,33 +60,39 @@ func main() {
 	if len(os.Args) > 2 && os.Args[2] == "--parallel" { // I trust you also will give the num of cpus
 		c := make(chan string)
 		NUMCPUS, _ := strconv.Atoi(os.Args[3])
-		init := 0
-		end := NUMCPUS
-		iterations := 1
-		for {
-			if end > len(links) {
-				end = len(links)
-			}
-			jobs := links[init:end]
-			for _, link := range jobs {
+		// create a set of maximum goroutines depending on the num of cpus
+		// or the number of urls available
+		for i := 0; i < NUMCPUS; i++ {
+			link, err := popFirstLink(links)
+			if err != nil {
 				go checkLinkConcurrent(link, c)
-			}
-			for i := 0; i < len(jobs); i++ {
-				fmt.Println(<-c)
-			}
-			fmt.Printf("set %d of jobs done\n", iterations)
-			if len(links) == end {
+			} else {
 				break
 			}
-			init += NUMCPUS
-			end += NUMCPUS
-			iterations++
 		}
+		count := 0
+		// from now on, each time of one goroutine finishes we create a new one
+		// until we empty the list of links
+		// that we ensure we have only NUMCPUS goroutines working on parallel
+		for {
+			fmt.Println(<-c)
+			count++
+			link, err := popFirstLink(links)
+			if err != nil {
+				go checkLinkConcurrent(link, c)
+			} else {
+				break
+			}
+		}
+		fmt.Printf("processed %d urls\n", count)
 
 	} else {
+		count := 0
 		for _, link := range links {
 			checkLink(link)
+			count++
 		}
+		fmt.Printf("processed %d urls\n", count)
 	}
 }
 
